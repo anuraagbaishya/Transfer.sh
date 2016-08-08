@@ -27,7 +27,6 @@ import android.net.Uri;
 import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -61,13 +60,15 @@ public class FileGridAdapter extends CursorAdapter {
     private Context context;
     private PermissionRequestResult permissionRequestResult;
     private Tracker tracker;
+    private Boolean gridViewFlag;
 
-    public FileGridAdapter(AppCompatActivity activity, Cursor cursor, Tracker tracker) {
+    public FileGridAdapter(AppCompatActivity activity, Cursor cursor, Tracker tracker, Boolean gridViewFlag) {
         super(activity.getApplicationContext(), cursor, false);
         this.context = activity.getApplicationContext();
-        this.inflater = LayoutInflater.from(context);
+        this.inflater = LayoutInflater.from(activity);
         this.activity = activity;
         this.tracker = tracker;
+        this.gridViewFlag = gridViewFlag;
     }
 
     public PermissionRequestResult getPermissionRequestResult() {
@@ -76,7 +77,7 @@ public class FileGridAdapter extends CursorAdapter {
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
-        View view = inflater.inflate(R.layout.file_item, parent, false);
+        View view = inflater.inflate(gridViewFlag ? R.layout.file_grid_item : R.layout.file_list_item, parent, false);
         FileItemViewHolder holder = new FileItemViewHolder(view);
         view.setTag(holder);
         return view;
@@ -97,10 +98,12 @@ public class FileGridAdapter extends CursorAdapter {
         String ext = FilenameUtils.getExtension(name);
         int identifier = context.getResources().getIdentifier("t" + ext, "drawable", context.getPackageName());
         try {
-            holder.fileTypeImageView.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), identifier, null));
+            holder.fileTypeImageView.setImageResource(identifier);
+            // holder.fileTypeImageView.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), identifier, null));
         } catch (Resources.NotFoundException e) {
             e.printStackTrace();
-            holder.fileTypeImageView.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.tblank, null));
+            holder.fileTypeImageView.setImageResource(R.drawable.tblank);
+            //holder.fileTypeImageView.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.tblank, null));
         }
 
         holder.fileInfoImageButton.setOnClickListener(new View.OnClickListener() {

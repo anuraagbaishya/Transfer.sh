@@ -19,6 +19,7 @@ package me.kartikarora.transfersh.activities;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -74,12 +75,16 @@ import retrofit.mime.TypedFile;
 public class TransferActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final int FILE_RESULT_CODE = BuildConfig.VERSION_CODE / 10000;
+    private static final String PREF_GRID_VIEW_FLAG = "gridFlag";
+    private boolean showAsGrid = false;
     private CoordinatorLayout mCoordinatorLayout;
     private TextView mNoFilesTextView;
     private GridView mFileItemsGridView;
     private FileGridAdapter mAdapter;
     private Tracker mTracker;
     private AdView mAdView;
+    private SharedPreferences mSharedPreferences = null;
+    private Cursor mData = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +116,9 @@ public class TransferActivity extends AppCompatActivity implements LoaderManager
                 .setCategory("Activity : " + this.getClass().getSimpleName())
                 .setAction("Launched")
                 .build());
+
+        mSharedPreferences = getSharedPreferences(getPackageName(), MODE_PRIVATE);
+        showAsGrid = mSharedPreferences.getBoolean(PREF_GRID_VIEW_FLAG, true);
     }
 
     @Override
@@ -221,21 +229,8 @@ public class TransferActivity extends AppCompatActivity implements LoaderManager
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        if (mAdapter != null)
-            mAdapter.swapCursor(data);
-        else
-            mAdapter = new FileGridAdapter(TransferActivity.this, data, mTracker);
-        mFileItemsGridView.setAdapter(mAdapter);
-        mAdapter.notifyDataSetChanged();
-
-        if (null != data && data.getCount() == 0) {
-            mFileItemsGridView.setVisibility(View.GONE);
-            mNoFilesTextView.setVisibility(View.VISIBLE);
-        } else {
-            mFileItemsGridView.setVisibility(View.VISIBLE);
-            mNoFilesTextView.setVisibility(View.GONE);
-        }
-
+        mData = data;
+        display(data);
     }
 
     @Override
@@ -243,6 +238,7 @@ public class TransferActivity extends AppCompatActivity implements LoaderManager
         mFileItemsGridView.setVisibility(View.VISIBLE);
         mNoFilesTextView.setVisibility(View.GONE);
         mAdapter.swapCursor(null);
+        mData = null;
     }
 
     @Override
@@ -257,6 +253,8 @@ public class TransferActivity extends AppCompatActivity implements LoaderManager
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_transfer, menu);
+        menu.getItem(0).setVisible(!showAsGrid);
+        menu.getItem(1).setVisible(showAsGrid);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -264,7 +262,36 @@ public class TransferActivity extends AppCompatActivity implements LoaderManager
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_about) {
             startActivity(new Intent(this, AboutActivity.class));
+        } else if (item.getItemId() == R.id.action_view_grid) {
+            showAsGrid = true;
+            mSharedPreferences.edit().putBoolean(PREF_GRID_VIEW_FLAG, true).apply();
+            mFileItemsGridView.setNumColumns(getResources().getInteger(R.integer.col_count));
+        } else if (item.getItemId() == R.id.action_view_list) {
+            showAsGrid = false;
+            mSharedPreferences.edit().putBoolean(PREF_GRID_VIEW_FLAG, false).apply();
+            mFileItemsGridView.setNumColumns(1);
         }
+        invalidateOptionsMenu();
+        display(mData);
         return super.onOptionsItemSelected(item);
+    }
+
+    private void display(Cursor data) {
+        mAdapter = new FileGridAdapter(TransferActivity.this, data, mTracker, showAsGrid);
+        if (showAsGrid)
+            mFileItemsGridView.setNumColumns(getResources().getInteger(R.integer.col_count));
+        else
+            mFileItemsGridView.setNumColumns(1);
+        mFileItemsGridView.setAdapter(mAdapter);
+        mAdapter.notifyDataSetChanged();
+
+        if (null != data && data.getCount() == 0) {
+            mFileItemsGridView.setVisibility(View.GONE);
+            mNoFilesTextView.setVisibility(View.VISIBLE);
+        } else {
+            mFileItemsGridView.setVisibility(View.VISIBLE);
+            mNoFilesTextView.setVisibility(View.GONE);
+        }
+
     }
 }
