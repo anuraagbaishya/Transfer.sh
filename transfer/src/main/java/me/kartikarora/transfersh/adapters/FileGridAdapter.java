@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Kartik Arora
+ * Copyright 2018 Kartik Arora
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package me.kartikarora.transfersh.adapters;
 import android.Manifest;
 import android.app.DownloadManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
@@ -34,17 +34,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.gms.analytics.HitBuilders;
-import com.google.android.gms.analytics.Tracker;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import org.apache.commons.io.FilenameUtils;
+
+import java.util.Locale;
 
 import me.kartikarora.transfersh.BuildConfig;
 import me.kartikarora.transfersh.R;
 import me.kartikarora.transfersh.contracts.FilesContract;
+import me.kartikarora.transfersh.helpers.UtilsHelper;
 
 /**
  * Developer: chipset
@@ -59,15 +60,15 @@ public class FileGridAdapter extends CursorAdapter {
     private AppCompatActivity activity;
     private Context context;
     private PermissionRequestResult permissionRequestResult;
-    private Tracker tracker;
+    private FirebaseAnalytics mFirebaseAnalytics;
     private Boolean gridViewFlag;
 
-    public FileGridAdapter(AppCompatActivity activity, Cursor cursor, Tracker tracker, Boolean gridViewFlag) {
+    public FileGridAdapter(AppCompatActivity activity, Cursor cursor, FirebaseAnalytics firebaseAnalytics, Boolean gridViewFlag) {
         super(activity.getApplicationContext(), cursor, false);
         this.context = activity.getApplicationContext();
         this.inflater = LayoutInflater.from(activity);
         this.activity = activity;
-        this.tracker = tracker;
+        this.mFirebaseAnalytics = firebaseAnalytics;
         this.gridViewFlag = gridViewFlag;
     }
 
@@ -84,27 +85,21 @@ public class FileGridAdapter extends CursorAdapter {
     }
 
     @Override
-    public void bindView(View view, final Context context, Cursor cursor) {
-        FileItemViewHolder holder = (FileItemViewHolder) view.getTag();
+    public void bindView(final View view, final Context context, Cursor cursor) {
+        final FileItemViewHolder holder = (FileItemViewHolder) view.getTag();
+        final int idCol = cursor.getColumnIndex(FilesContract.FilesEntry._ID);
         int nameCol = cursor.getColumnIndex(FilesContract.FilesEntry.COLUMN_NAME);
         int typeCol = cursor.getColumnIndex(FilesContract.FilesEntry.COLUMN_TYPE);
         int sizeCol = cursor.getColumnIndex(FilesContract.FilesEntry.COLUMN_SIZE);
         int urlCol = cursor.getColumnIndex(FilesContract.FilesEntry.COLUMN_URL);
+        final long id = cursor.getLong(idCol);
         final String name = cursor.getString(nameCol);
         final String type = cursor.getString(typeCol);
         final String size = cursor.getString(sizeCol);
         final String url = cursor.getString(urlCol);
         holder.fileNameTextView.setText(name);
         String ext = FilenameUtils.getExtension(name);
-        int identifier = context.getResources().getIdentifier("t" + ext, "drawable", context.getPackageName());
-        try {
-            holder.fileTypeImageView.setImageResource(identifier);
-            // holder.fileTypeImageView.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), identifier, null));
-        } catch (Resources.NotFoundException e) {
-            e.printStackTrace();
-            holder.fileTypeImageView.setImageResource(R.drawable.tblank);
-            //holder.fileTypeImageView.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.tblank, null));
-        }
+        holder.fileTypeImageView.setText(ext.toUpperCase(Locale.US));
 
         holder.fileInfoImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -122,10 +117,8 @@ public class FileGridAdapter extends CursorAdapter {
         holder.fileShareImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                tracker.send(new HitBuilders.EventBuilder()
-                        .setCategory("Action")
-                        .setAction("Share : " + url)
-                        .build());
+                UtilsHelper.getInstance().trackEvent(mFirebaseAnalytics, "Action", "Share : " + url);
+
                 context.startActivity(new Intent()
                         .setAction(Intent.ACTION_SEND)
                         .putExtra(Intent.EXTRA_TEXT, url)
@@ -140,30 +133,48 @@ public class FileGridAdapter extends CursorAdapter {
                 checkForDownload(name, type, url, view);
             }
         });
+
+        holder.fileDeleteImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                UtilsHelper.getInstance().trackEvent(mFirebaseAnalytics, "Action", "Delete : " + url);
+                new AlertDialog.Builder(activity)
+                        .setMessage("Delete file " + name + " ?")
+                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                context.getContentResolver().delete(FilesContract.BASE_CONTENT_URI, FilesContract.FilesEntry._ID + "=?", new String[]{String.valueOf(id)});
+                                Snackbar.make(view, "Deleted file " + name, Snackbar.LENGTH_SHORT).show();
+                            }
+                        })
+                        .setNegativeButton(android.R.string.no, null)
+                        .create().show();
+            }
+        });
     }
 
     private class FileItemViewHolder {
 
         private TextView fileNameTextView;
-        private ImageView fileTypeImageView;
+        private TextView fileTypeImageView;
         private ImageButton fileInfoImageButton;
         private ImageButton fileShareImageButton;
         private ImageButton fileDownloadImageButton;
+        private ImageButton fileDeleteImageButton;
 
         public FileItemViewHolder(View view) {
             fileNameTextView = (TextView) view.findViewById(R.id.file_item_name_text_view);
-            fileTypeImageView = (ImageView) view.findViewById(R.id.file_item_type_image_view);
+            fileTypeImageView = (TextView) view.findViewById(R.id.file_item_type_text_view);
             fileInfoImageButton = (ImageButton) view.findViewById(R.id.file_item_info_image_button);
             fileShareImageButton = (ImageButton) view.findViewById(R.id.file_item_share_image_button);
             fileDownloadImageButton = (ImageButton) view.findViewById(R.id.file_item_download_image_button);
+            fileDeleteImageButton = (ImageButton) view.findViewById(R.id.file_item_delete_image_button);
         }
     }
 
     private void beginDownload(String name, String type, String url) {
-        tracker.send(new HitBuilders.EventBuilder()
-                .setCategory("Action")
-                .setAction("Download : " + url)
-                .build());
+        UtilsHelper.getInstance().trackEvent(mFirebaseAnalytics, "Action", "Download : " + url);
+
         DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
         Uri uri = Uri.parse(url);
         DownloadManager.Request request = new DownloadManager.Request(uri);

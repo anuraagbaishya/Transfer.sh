@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-    Copyright 2016 Kartik Arora
+    Copyright 2018 Kartik Arora
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@
     limitations under the License.
 -->
 <resources>
-    <!-- Not Translated -->
     <string name="app_name" translatable="false">Transfer.sh</string>
-    <string name="mwlin_text" translatable="false">
+    <string name="mwlii_text" translatable="false">
         <![CDATA[Made with <span style="color: #e74c3c">&hearts;</span> in India]]>
     </string>
-    <string name="app_id" translatable="false">ca-app-pub-5469016771832930~5849475803</string>
-    <string name="ad_unit_id" translatable="false">ca-app-pub-5469016771832930/6402925407</string>
+    <string name="app_id" translatable="false">ca-app-pub-5219660827342005~8629242571</string>
+    <string name="ad_unit_id" translatable="false">ca-app-pub-5219660827342005/1105975776</string>
     <string name="content_authority" translatable="false">me.kartikarora.transfersh</string>
 
     <string name="no_files_uploaded">No files uploaded</string>
     <string name="download_complete">Download Complete</string>
-    <string name="uploading_file">Uploading file</string>
+    <string name="uploading_file">Uploading %1$s</string>
     <string name="something_went_wrong">Something went wrong</string>
     <string name="uploaded">uploaded</string>
     <string name="report">Report</string>
@@ -41,4 +40,13 @@
     <string name="view_list">View as list</string>
     <string name="view_grid">View as grid</string>
     <string name="play_store_text">Rate and/or review on Play Store</string>
+    <string name="share">Share</string>
+    <string name="mimetype_image">Mimetype Image</string>
+    <string name="server_error">Server Error</string>
+    <string name="server_error_message">Server at %1$s could not be found or is not a valid Transfer.sh server. Please enter the correct URL</string>
+    <string name="setup_url_message">Enter the URL with which you would like to use this service. Press %1$s if you want to use the default server.</string>
+    <string name="setup_url_message_change">Enter the URL with which you would like to use this service. Press %1$s if you want to use the current server.</string>
+    <string name="setup_url">Enter URL</string>
+    <string name="set_server_url">Set server URL</string>
+    <string name="please_wait">Please wait</string>
 </resources>

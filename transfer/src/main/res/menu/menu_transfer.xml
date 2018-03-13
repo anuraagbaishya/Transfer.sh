@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?><!--Copyright 2016 Kartik Arora
+<?xml version="1.0" encoding="utf-8"?><!--
+    Copyright 2018 Kartik Arora
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,4 +29,8 @@
         android:icon="@drawable/ic_info_white"
         android:title="@string/about_app"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/action_set_server_url"
+        android:title="@string/set_server_url"
+        app:showAsAction="never" />
 </menu>

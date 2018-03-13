@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Kartik Arora
+ * Copyright 2018 Kartik Arora
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.customtabs.CustomTabsIntent;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.text.Html;
@@ -27,8 +29,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import com.google.android.gms.analytics.HitBuilders;
-import com.google.android.gms.analytics.Tracker;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import de.psdev.licensesdialog.LicensesDialog;
 import de.psdev.licensesdialog.licenses.ApacheSoftwareLicense20;
@@ -39,6 +40,7 @@ import de.psdev.licensesdialog.model.Notices;
 import me.kartikarora.transfersh.BuildConfig;
 import me.kartikarora.transfersh.R;
 import me.kartikarora.transfersh.applications.TransferApplication;
+import me.kartikarora.transfersh.helpers.UtilsHelper;
 
 /**
  * Developer: chipset
@@ -47,7 +49,6 @@ import me.kartikarora.transfersh.applications.TransferApplication;
  * Date : 30/6/16
  */
 public class AboutActivity extends AppCompatActivity {
-    private Tracker mTracker;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,12 +56,9 @@ public class AboutActivity extends AppCompatActivity {
         setContentView(R.layout.activity_about);
 
         TransferApplication application = (TransferApplication) getApplication();
-        mTracker = application.getDefaultTracker();
+        FirebaseAnalytics firebaseAnalytics = application.getDefaultTracker();
 
-        mTracker.send(new HitBuilders.EventBuilder()
-                .setCategory("Activity : " + this.getClass().getSimpleName())
-                .setAction("Launched")
-                .build());
+        UtilsHelper.getInstance().trackEvent(firebaseAnalytics, "Activity : " + this.getClass().getSimpleName(), "Launched");
 
         CardView aboutCardView = (CardView) findViewById(R.id.about_card);
         CardView openSourceLicensesCardView = (CardView) findViewById(R.id.open_source_licenses_card);
@@ -68,12 +66,12 @@ public class AboutActivity extends AppCompatActivity {
         CardView playStoreCardView = (CardView) findViewById(R.id.play_store_card);
         TextView devTextView = (TextView) findViewById(R.id.dev_text_view);
         TextView designTextView = (TextView) findViewById(R.id.design_text_view);
-        TextView mwlinTextView = (TextView) findViewById(R.id.mwlin_text_view);
+        TextView mwliiTextView = (TextView) findViewById(R.id.mwlii_text_view);
 
         aboutCardView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String url = "http://kartikarora.me", name = "Transfer.sh", copyright = "Copyright (C) 2016 Kartik Arora";
+                String url = "http://kartikarora.me", name = "Transfer.sh", copyright = "Copyright (C) 2017 Kartik Arora";
                 License license = new ApacheSoftwareLicense20();
                 Notice notice = new Notice(name, url, copyright, license);
                 new LicensesDialog.Builder(AboutActivity.this)
@@ -91,7 +89,7 @@ public class AboutActivity extends AppCompatActivity {
                 Notices notices = new Notices();
                 String url, name, copyright;
 
-                name = "android-support-v4, android-support-v7-appcompat, android-support-design";
+                name = "android-support-v4, android-support-v7-appcompat, android-support-design, android-support-customtabs";
                 copyright = "Copyright (C) 2015 The Android Open Source Project";
                 url = "https://source.android.com/";
                 License license = new ApacheSoftwareLicense20();
@@ -134,6 +132,13 @@ public class AboutActivity extends AppCompatActivity {
                 notice = new Notice(name, url, copyright, license);
                 notices.addNotice(notice);
 
+                name = "Potato Library";
+                copyright = "Copyright (c) 2017 Kartik Arora";
+                url = "http://kartikarora.me/Potato-Library";
+                license = new MITLicense();
+                notice = new Notice(name, url, copyright, license);
+                notices.addNotice(notice);
+
                 new LicensesDialog.Builder(AboutActivity.this)
                         .setNotices(notices)
                         .setIncludeOwnLicense(true)
@@ -170,29 +175,34 @@ public class AboutActivity extends AppCompatActivity {
             }
         });
 
-        mwlinTextView.setText(Html.fromHtml(getString(R.string.mwlin_text)));
+        mwliiTextView.setText(Html.fromHtml(getString(R.string.mwlii_text)));
+
         devTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("http://kartikarora.me")));
+                launchChromeCustomTab("http://kartikarora.me", R.color.kartik);
             }
         });
 
         designTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("http://www.freepik.com/")));
+                launchChromeCustomTab("http://www.freepik.com/", R.color.freepik);
             }
         });
 
-        mwlinTextView.setOnClickListener(new View.OnClickListener() {
+        mwliiTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("http://madewithlove.org.in/")));
+                launchChromeCustomTab("http://madewithlove.org.in/", R.color.mwlii);
             }
         });
+    }
+
+    private void launchChromeCustomTab(String url, int color) {
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+        builder.setToolbarColor(ContextCompat.getColor(getApplicationContext(), color));
+        CustomTabsIntent customTabsIntent = builder.build();
+        customTabsIntent.launchUrl(this, Uri.parse(url));
     }
 }
